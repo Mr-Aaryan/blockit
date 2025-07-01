@@ -111,6 +111,7 @@ Please execute it using 'sudo', for example: 'sudo block_site'.`,
 			Message: "Select websites to block (use spacebar to toggle, enter to confirm):",
 			Options: allSites,
 			Default: blockedSites,
+			PageSize: 15,
 		}
 
 		err = survey.AskOne(prompt, &selectedSites)
@@ -124,7 +125,7 @@ Please execute it using 'sudo', for example: 'sudo block_site'.`,
 			if contains(selectedSites, title) {
 				database.SelectBlocked(title)
 				if lineNumbers, exists := blockMap[title]; exists {
-					if err := handleFile(lineNumbers, 1); err != nil { // selec=1 to COMMENT (BLOCK)
+					if err := handleFile(lineNumbers, 0); err != nil { // selec=1 to UNCOMMENT (BLOCK)
 						log.Printf("Error blocking '%s' in /etc/hosts: %v", title, err)
 					} else {
 						changesApplied = true
@@ -135,7 +136,7 @@ Please execute it using 'sudo', for example: 'sudo block_site'.`,
 			} else {
 				database.UnselectBlocked(title)
 				if lineNumbers, exists := blockMap[title]; exists {
-					if err := handleFile(lineNumbers, 0); err != nil { // selec=0 to UNCOMMENT (UNBLOCK)
+					if err := handleFile(lineNumbers, 1); err != nil { // selec=0 to COMMENT (UNBLOCK)
 						log.Printf("Error unblocking '%s' in /etc/hosts: %v", title, err)
 					} else {
 						changesApplied = true
