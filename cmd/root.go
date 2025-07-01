@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/Mr-Aaryan/blockit/database"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
@@ -85,12 +85,12 @@ Please execute it using 'sudo', for example: 'sudo block_site'.`,
 		// Pre-allocate slices with known capacity to reduce memory allocations
 		blockMap := make(map[string][]int, len(allBlocks))
 		allSites := make([]string, 0, len(allBlocks))
-		
+
 		for _, item := range allBlocks {
 			allSites = append(allSites, item.Title)
 			parts := strings.Split(item.BlockId, ",")
 			lineNumbers := make([]int, 0, len(parts)) // Pre-allocate with capacity
-			
+
 			for _, part := range parts {
 				if num, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
 					lineNumbers = append(lineNumbers, num)
@@ -107,16 +107,30 @@ Please execute it using 'sudo', for example: 'sudo block_site'.`,
 		}
 
 		var selectedSites []string
-		prompt := &survey.MultiSelect{
-			Message: "Select websites to block (use spacebar to toggle, enter to confirm):",
-			Options: allSites,
-			Default: blockedSites,
-			PageSize: 15,
+		// Set default selected sites to currently blocked sites
+		selectedSites = append(selectedSites, blockedSites...)
+
+		// Create options for Huh MultiSelect
+		options := make([]huh.Option[string], len(allSites))
+		for i, site := range allSites {
+			options[i] = huh.NewOption(site, site)
 		}
 
-		err = survey.AskOne(prompt, &selectedSites)
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Title("Select websites to block").
+					Description("Use arrow keys to navigate, space to select/deselect, enter to confirm").
+					Options(options...).
+					Value(&selectedSites).
+					Limit(len(allSites)).
+					Height(15),
+			),
+		)
+
+		err = form.Run()
 		if err != nil {
-			log.Fatal("Error during survey prompt: ", err)
+			log.Fatal("Error during form prompt: ", err)
 		}
 
 		changesApplied := false
